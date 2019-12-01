@@ -1,0 +1,131 @@
+body {
+  bottom: 0;
+  top: 0;
+  margin: 0px;
+
+  font: 14px "Century Gothic", Futura, sans-serif;
+}
+.frame{
+  bottom: 0;
+  top: 0;
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  text-align: center;
+  background-color: #e5e5e5;
+}
+.my-name{
+  width: inherit;
+  text-align: left;
+  height: 50px;
+  color: #fff;
+  border-bottom:  1px solid #32465a;
+}
+.my-name h2{
+  margin-left: 20px;
+}
+.leftPanel{
+  position: inherit;
+  width: 230px;
+  height: inherit;
+  background-color:  #2c3e50;
+}
+.contacts{
+  margin: 0;
+  padding-left: 0px;
+  width: 230px;
+  border-radius: 20px;
+  color: #fff;
+
+}
+ li.contact p{
+   list-style-type: none;
+   margin: 0;
+   padding: 12px;
+}
+li.contact.active{
+  -webkit-box-shadow: 0 0 6px #1d2c3a;
+    background-color: #1f2e3c;
+}
+li.contact{
+  padding: 1px;
+  list-style-type: none;
+  color: inherit;
+}
+.showBlockchain{
+  left: 0;
+  width: inherit;
+  position: absolute;
+  border: none;
+  height: 30px;
+  background-color: #32465a;
+  color: #fff;
+  bottom: 0px;
+}
+.messages{
+  overflow-y: auto;
+  background-color: #e6eaea;
+  padding: 10px;
+  padding-bottom: 0px;
+  position: inherit;
+  right: 0px;
+  width: calc(100vw - 250px);
+  height: calc(100% - 40px);
+}
+.wrap {
+  padding: 10px;
+  background-color: 456;
+  border-radius: 20px;
+  width: max-content;
+}
+.message{
+  display: inline-block;
+  position: relative;
+  width: 100%;
+  margin-top: 5px;
+  margin-bottom: 5px;
+
+}
+.wrap p{
+  text-align: left;
+  margin: 0px;
+  margin-bottom: 10px;
+  word-wrap: break-word;
+}
+.wrap span{
+  float: right;
+  bottom: 0px;
+  margin-right: 3px;
+  font-size: 10px;
+}
+.send .wrap{
+  float: right;
+  background-color: #f5f5f5;
+  color: #000;
+}
+.replice .wrap{
+  color: #fff;
+  float: left;
+  background-color: #435f7a;
+}
+div.input{
+  position: absolute;
+      right: 0;
+      bottom: 0;
+      width: calc(100vw - 230px);
+}
+input{
+  width: calc(100vw - 264px);
+  height: 30px;
+  padding: 0 0 0 0;
+  border: 0;
+}
+.input button{
+  width: 30px;
+  height: 30px;
+  background-color: #2c3e50;
+  border: none;
+}
+i{
+  color: #fff;
+}

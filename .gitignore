@@ -6,3 +6,5 @@ peer4
 peer5
 npm-debug.log
 .idea
+.gitignore
+ide/peer1/db

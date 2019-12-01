@@ -1,11 +1,31 @@
 {
-  "name": "naivechain",
+  "name": "electron-quick-start",
   "version": "1.0.0",
-  "description": "",
+  "description": "A minimal Electron application",
+  "main": "main.js",
   "scripts": {
-    "start": "node server : node peer1 : node peer2 : node peer3 : node peer4 : node peer5"
+    "start": "electron -rebuild ."
+  },
+  "repository": "https://github.com/electron/electron-quick-start",
+  "keywords": [
+    "Electron",
+    "quick",
+    "start",
+    "tutorial",
+    "demo"
+  ],
+  "author": "GitHub",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "electron": "^7.0.0",
+    "body-parser": "^1.15.2",
+    "crypto-js": "^3.1.6",
+    "express": "~4.11.1",
+    "nedb": "^1.8.0",
+    "ws": "^1.1.0"
   },
   "dependencies": {
+    "jquery": "^3.4.1",
     "body-parser": "^1.15.2",
     "crypto-js": "^3.1.6",
     "express": "~4.11.1",

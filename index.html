@@ -1,0 +1,43 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="./index.css">
+    <link rel="stylesheet" href="./fontawesome/css/all.css">
+    <script>window.$ = window.jQuery = require('./node_modules/jquery/dist/jquery.min.js')</script>
+    <meta charset="UTF-8">
+    <title>Hello World!</title>
+  </head>
+  <body>
+        <div class="frame">
+        <div class="leftPanel">
+        <div class="my-name">
+          <h2></h2>
+        </div>
+        <ul class="contacts">
+        </ul>
+        <button class="showBlockchain"  type="button">Показать блокчейн</button>
+      </div>
+      <div class="messages">
+        <div class="message send">
+          <div class="wrap">
+            <p>Text message</p>
+            <span>date</span>
+          </div>
+        </div>
+        <div class="message replice">
+          <div class="wrap">
+            <p>Text message</p>
+            <span>date</span>
+          </div>
+        </div>
+
+        </div>
+        <div class="input">
+          <input type="text"  placeholder="Введите сообщение.." name="inputMessage" value="" id= "textMessages">
+          <button type="button" name="button"> <i class="fa fa-paper-plane"></i> </button>
+        </div>
+      </div>
+  </body>
+    <script src="./renderer.js"></script>
+    <script src="./init.js"></script>
+  </body>
+</html>
