@@ -153,3 +153,8 @@ exports.getNewChain = function (timestamp,cb) {
     cb(chain)
   })
 }
+exports.getChain = function (timestamp,cb) {
+  db.find({timestamp:{$gt: timestamp}}).sort({timestamp: 1}).exec(function (err,chain) {
+    cb(chain)
+  })
+}

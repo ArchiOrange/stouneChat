@@ -142,6 +142,7 @@ var sendMessageForAllConnectPeers = (dataSender,wsServer,poolServers) => {
                   init: 7,
                   data: lastBlock.timestamp
                 }
+                Lastblock = lastBlock
                   requestNewChain = JSON.stringify(requestNewChain)
                   poolServers[0].servers.send(requestNewChain)
                 })
@@ -294,7 +295,6 @@ var   receivedBlockProcessing = (data,wsServer,poolServers,wss) => {
       if(Lastblock.previousHash != data.newBlock.previousHash && Lastblock.index != data.newBlock.index){
         Lastblock = data.newBlock
          ApiBlockchain.addNewBlockToBlockchain(data.newBlock,function(doc) {
-           console.log({status: 'ADDblock'},data.newBlock);
            if(doc != 0 ){
              console.log({status: 'ADDblock'},data.newBlock);
            }
@@ -383,7 +383,8 @@ function checkNewChain(data) {
       ApiBlockchain.getLastChain(function (lastBlock) {
         ApiBlockchain.upload(chain,lastBlock,function (status) {
           if(status){
-            console.log(360,status);
+            console.log("обновление");
+            addNewMessages(Lastblock.timestamp, exports.GlobListContact)
             Lastblock = chain[chain.length-1]
           }
         })
@@ -417,4 +418,19 @@ exports.creatIdRoom = function (cb) {
    num = Math.floor(num * 1000000)
   let idConatact = "a" + String(new Date().getTime()) + String(num)
   return idConatact
+}
+function addNewMessages(index, contactList) {
+  console.log('refresh');
+  ApiBlockchain.getChain(index,function (newBlockChain) {
+    console.log("newBlockChain",newBlockChain);
+    for (let i = 0; i < newBlockChain.length; i++) {
+      for (let j = 0; j < contactList.length; j++) {
+        if (newBlockChain[i].data[0].id == contactList[j].id) {
+            DBcontacts.addMessages(newBlockChain[i].data[0].id, 2, newBlockChain[i].data[0].message, newBlockChain[i].data[0].index,function () {
+              console.log("вы пропустили сообщение");
+            })
+        }
+      }
+    }
+  })
 }
