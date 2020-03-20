@@ -1,7 +1,14 @@
 node_modules
+IDE/node_modules
+package-lock.json
+IDE/package-lock.json
 ide/peer10
 ide/peer11
 ide/peer12
+ide/peer13
+peer1/blockchain.json
+peer1/mydata.json
+peer1/contacts.json
 peer4
 peer5
 npm-debug.log

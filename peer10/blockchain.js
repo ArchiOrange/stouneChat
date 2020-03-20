@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 var Datastore = require('nedb');
-var db = new Datastore({filename : __dirname + '/db/blockchain.json', autoload: true});
+var db = new Datastore({filename : __dirname + '\\db\\blockchain.json', autoload: true});
 var indexMes = 0;
 var messages = [];
 class Block {
@@ -65,6 +65,7 @@ exports.showMessages = function (cb) {
 exports.isValidNewBlock = function (newBlock,previousBlock,cb) {
       //console.log({err:'неверный индекс',previousBlock:previousBlock,newBlock:newBlock});
       if (previousBlock.index + 1 !== newBlock.index) {
+
           return cb(false);
       } else if (previousBlock.hash !== newBlock.previousHash) {
           console.log('неверный хеш предыдущего блока');
@@ -74,52 +75,29 @@ exports.isValidNewBlock = function (newBlock,previousBlock,cb) {
           return cb(false);
       }
       return cb(true);
-};exports.isValidNewBlockNotCB = function (newBlock,previousBlock) {
-      if (previousBlock.index + 1 !== newBlock.index) {
-          return false
-      } else if (previousBlock.hash !== newBlock.previousHash) {
-          console.log('неверный хеш предыдущего блока');
-          return false
-      } else if (checkHash(newBlock.index,newBlock.previousHash,newBlock.timestamp,newBlock.data,newBlock.nonce) !== newBlock.hash) {
-          console.log('неверный хеш: ');
-          return false
-      }
-          return true
 };
-exports.generateNextBlock = function (workerData,cb) { //передавать весь обект а не ссылку !
+exports.generateNextBlock = function (workerData,cb) { //передавать весь обект а не ссылку !wo
   var blockData = JSON.parse(JSON.stringify(workerData.messages))
     let nextIndex = workerData.blockchain.index + 1;
     var nextTimestamp = new Date().getTime() / 1000;
     var nextHash = calculateHash(nextIndex, workerData.blockchain.hash, nextTimestamp, blockData,function(hash,data,nonce) {
        block =  new Block(nextIndex, workerData.blockchain.hash, nextTimestamp, data,nonce, hash);
-       block.i789am =9001
     return  cb(block)
     })
 }
-exports.upload =  function (chain,lastBlock,cb) {
-      if (exports.isValidNewBlockNotCB(chain[0],lastBlock)) {
-        let success = true
-          for (let i = chain.length; i < chain.length-1; i++) {
-            if(exports.isValidNewBlock(chain[i],chain[i+1])){
-              success = false
-              break
-            }
-          }
-          if(success){
-            addBlockInDB(chain,function (docs) {
-              console.log(docs);
-              cb(true)
-
+exports.upload =  function (newBlockchain) {
+  previousBlockAlpha(function (docsPreviousBlock) {
+    var previousBlock = blockchain[blockchain.length-1]
+      if (exports.isValidNewBlock(previousBlock,newBlockchain[blockchain.length]) && newBlocks.length > blockchain.length) {
+          for (var i = blockchain.length; i < newBlockchain.length; i++) {
+            blockchain[i] = newBlockchain[i]
+            addBlockInDB(newBlockchain[i],function (docs) {
             })
           }
-          else{
-              cb(false)
-          //  return("не верная цепочка");
-          }
       } else {
-        console.log('Принятый блокчейн не является валидным');
-          cb(false)
+          console.log('Принятый блокчейн не является валидным');
       }
+  })
 
 }
 exports.addFirstBlockchain = function (newBlockchain) {
@@ -137,24 +115,4 @@ exports.addNewBlockToBlockchain = function (block,cb) {
     console.log(err);
     cb(newDoc)
 });
-}
-exports.lengthChain = function (cb) {
-  db.count({},function (err,count) {
-    cb(count)
-  })
-}
-exports.getLastChain = function (cb) {
-  db.findOne({}).sort({timestamp:-1}).limit(1).exec(function (err,block) {
-    cb(block)
-  })
-}
-exports.getNewChain = function (timestamp,cb) {
-  db.find({timestamp: {$gt: timestamp}}).sort({timestamp: 1}).exec(function (err,chain) {
-    cb(chain)
-  })
-}
-exports.getChain = function (timestamp,cb) {
-  db.find({timestamp:{$gt: timestamp}}).sort({timestamp: 1}).exec(function (err,chain) {
-    cb(chain)
-  })
 }

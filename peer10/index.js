@@ -1,4 +1,3 @@
-const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 class DataSender {
   constructor(newBlock=0,init=0,blockchain=0,ipClient=0,peers=0,port=0) {
     this.newBlock = newBlock
@@ -18,9 +17,8 @@ class Block {
         this.hash = hash.toString();
     }
 }
-var Lastblock = 0
-const DBcontacts = require('./contacts.js')
-exports.GlobListContact = []
+const ipcRenderer = require('electron').ipcRenderer;
+var lastblock = 0
 const DBapi = require('./db.js')
 const ApiBlockchain = require('./blockchain');
 const crypto = require('crypto');
@@ -28,21 +26,20 @@ var myData = {myIP:null,myPort:null,countClient:null}
 var myport = __dirname.replace(/\D/g,'')
 myport = +myport+ 9000
 let w = null
-const ipcRenderer = require('electron').ipcRenderer;
 var statusServer = false
 //var peers = null
 var poolServers = []
 //***********************INIT****************************//
-const {createServer} = require('http')
-const express = require("express");
-const bodyParser = require('body-parser');
-const WebSocket = require("ws");
-let  app = express();
-let  server = createServer(app)
+const {createServer}= require('http')
+var express = require("express");
+var bodyParser = require('body-parser');
+var WebSocket = require("ws");
+var app = express();
+const server = createServer(app)
 const wsServer = new WebSocket.Server({server});
 app.use(bodyParser.json());
 var wss = null
-firstConnection('localhost',8080)
+firstConnection('localhost',9010)
 wsServer.on('connection',function (wss) {//событие соединющие всех
   newClient(myData,1)
   wss.on('message',function incoming(data) {//событие прослушивающие данные от клиентов
@@ -66,29 +63,16 @@ wsServer.on('connection',function (wss) {//событие соединющие �
       else if (data.init == 8){
         disconectPeerFromNetwork(data,wsServer,poolServers,wss)
       }
-      else if (data.init == 7) {
-       sendNewChain(wss,data)
-      }
   })
   wss.on('close',function () {
     newClient(myData,-1)
-
-      DBapi.findPeer(wss._socket.remoteAddress.replace(/::.+:/,''),wss.port,function (peer) {
-          if(peer != null ){
-            DBapi.delPeer(peer.ip,peer.port,function (err,log) {
-            })
-            let dataAbotDisconnectPeer = new DataSender()
-            dataAbotDisconnectPeer.init = 8
-            dataAbotDisconnectPeer.data = peer
-            sendMessageForAllConnectPeers(dataAbotDisconnectPeer,wsServer,poolServers)
-          }
-      })
+console.log('disconect',wss._connectionKey);
   })
 })
 var serverup = (ip) => {
    server.listen(myport,ip, () => {
      statusServer = true
-     console.log('Listening http on pxort: ' + myport)
+     console.log('Listening http on pxort: ' + myport,'server port' + 9000)
    });
 }
 
@@ -99,14 +83,21 @@ var sendMessageForAllConnectPeers = (dataSender,wsServer,poolServers) => {
       client.send(dataSender);
   });
     for (var i = 0; i < poolServers.length; i++) {
+      //console.log(poolServers[i].url);
       poolServers[i].servers.send(dataSender)
     }
 }
   //*********************KLIENT*********************//
+  // var poolServers
+  // var poolPorts = [{portserver:8080}]
+  // for (var i = 0; i < portserver.length; i++) {
+  //   console.log(1);
+  //   opentConectionForPoolServers(8080,poolServers.portserver)
+  // }
 
   function firstConnection(ip,portserver) {
     var WebSocket = require("ws");
-    var wsClient = new WebSocket('ws://'+ip+':'+ portserver)
+  var wsClient = new WebSocket('ws://'+ip+':'+ portserver)
     wsClient.on('open',function open() {
       var data = new DataSender()
       data.init = 1
@@ -127,26 +118,16 @@ var sendMessageForAllConnectPeers = (dataSender,wsServer,poolServers) => {
             })
             //peers = data.peers
             for (var i = 0; i < data.peers.length; i++) {
+              //console.log(peers);
               poolServers[i] = opentConectionForPoolServers(data.peers[i].ip,data.peers[i].port)
               poolServers[i] = {servers:poolServers[i],url:poolServers[i].url}
             }
             serverup(data.ipClient)
             ApiBlockchain.showBlockchain(function (blockchain) {
-              if(blockchain == 0){
-                Lastblock = data.blockchain[0]
+              if(blockchain==0){
+                lastblock = data.blockchain[0]
+                //console.log(lastblock);
                 ApiBlockchain.addFirstBlockchain(data.blockchain)
-              }
-              else{
-                ApiBlockchain.getLastChain(function (lastBlock) {
-                let requestNewChain = {
-                  init: 7,
-                  data: lastBlock.timestamp
-                }
-                Lastblock = lastBlock
-                  requestNewChain = JSON.stringify(requestNewChain)
-                  poolServers[0].servers.send(requestNewChain)
-                })
-
               }
             })
           }
@@ -169,6 +150,7 @@ function opentConectionForPoolServers(ip,portserver) {
         poolServers.splice(i,1)
       }
     }
+    //console.log('disconect',wsClient.url);
         var peerIP = wsClient.url.replace('ws://','')
         peerIP = peerIP.replace(/:.+/,'')
         peerPort = wsClient.url.replace(/ws:[//].+:/,'')
@@ -194,10 +176,8 @@ function opentConectionForPoolServers(ip,portserver) {
           receivedBlockProcessing(data,wsServer,poolServers,wss)
         }
         else if (data.init == 8){
+          //console.log(8);
           disconectPeerFromNetwork(data,wsServer,poolServers,wss)
-        }
-        else if (data.init == 9){
-            checkNewChain(data)
         }
   })
   return wsClient
@@ -209,7 +189,6 @@ function opentConectionForPoolServers(ip,portserver) {
 app.get('/blockchain',function (req,res) {
   ApiBlockchain.showBlockchain(function (blockchain) {
   res.json({peers,blockchain})
-  // res.json(exports.GlobListContact)
   })
 })
 app.get('/messages',function (req,res) {
@@ -222,23 +201,14 @@ app.get('/peers',function (req,res) {
     res.json(peers)
   })
 })
-app.get('/send',function (req,res) {
-    ApiBlockchain.showMessages(function (messages) {
+exports.sendMessage = function (message) {
       var sendData = new DataSender()
-      sendData.block = {
-        index: new Date().getTime() / 1000,
-        sender:req.query.s,
-        resepent:req.query.r,
-        message: req.query.m
-      }
+      sendData.block = message
       sendData.init = 5
       sendMessageForAllConnectPeers(sendData,wsServer,poolServers)
-    res.sendStatus(200)
-    })
-})
+}
   //*********************KLIENT*********************//
 var sendDataNewClient = (data,wss,wsServer,poolServers) => {
-  wss.port = data.port
   ApiBlockchain.showBlockchain(function (blockchain) {
     var dataSendToClient = new DataSender()
     dataSendToClient.ipClient = wss._socket.remoteAddress
@@ -257,6 +227,7 @@ var sendDataNewClient = (data,wss,wsServer,poolServers) => {
     port: data.port,
     count: 0
     }
+    //console.log(dataNewPeer);
   sendMessageForAllConnectPeers(dataNewPeer,wsServer,poolServers)
 }
 var receptionAndBroadkastMessages = (wsServer,poolServers,wss,data) => {
@@ -272,9 +243,9 @@ var receptionAndBroadkastMessages = (wsServer,poolServers,wss,data) => {
       cashMes[cashMes.length] = data.block
       sendMessageForAllConnectPeers(data,wsServer,poolServers)
       ApiBlockchain.showMessages(function (cashMes) {
-          let priveteLastBlock = Lastblock
+          let priveteLastBlock = lastblock
           var dataThread = {
-            path: __dirname+ '/worker.js',
+            path: __dirname+ '\\worker.js',
             messages: cashMes,
             lastblock:priveteLastBlock
           }
@@ -283,35 +254,34 @@ var receptionAndBroadkastMessages = (wsServer,poolServers,wss,data) => {
             dataSender.init = 6
             dataSender.newBlock = result.blockForBlockhain
             dataSender.newBlock.sign = myport
+            console.log('dataSender',dataSender);
             sendMessageForAllConnectPeers(dataSender,wsServer,poolServers)
           })
     })
     }
   })
 }
+
+
 var   receivedBlockProcessing = (data,wsServer,poolServers,wss) => {
-  ApiBlockchain.isValidNewBlock(data.newBlock,Lastblock,function(bool) {
+  ApiBlockchain.isValidNewBlock(data.newBlock,lastblock,function(bool) {
     if(bool){
-      if(Lastblock.previousHash != data.newBlock.previousHash && Lastblock.index != data.newBlock.index){
-        Lastblock = data.newBlock
+      if(lastblock.previousHash != data.newBlock.previousHash && lastblock.index != data.newBlock.index){
+        lastblock = data.newBlock
          ApiBlockchain.addNewBlockToBlockchain(data.newBlock,function(doc) {
-           if(doc != 0 ){
-             console.log({status: 'ADDblock'},data.newBlock);
-           }
-           for (var i = 0; i < exports.GlobListContact.length; i++) {
-             if (data.newBlock.data[0].id == exports.GlobListContact[i].id) {
-               DBcontacts.findMessage(data.newBlock.data[0].id,1,data.newBlock.data[0].message,data.newBlock.data[0].index,function (message) {
-                 if(message){
-                   console.log('message success')
-                 }else{
-                   DBcontacts.addMessages(data.newBlock.data[0].id,2,data.newBlock.data[0].message,data.newBlock.data[0].index,function () {
-                     console.log("новое сообщение");
+           DBcontact.getListContacts(function (contact) {
+             if(data.newBlock.data[0].recipient == myName || data.newBlock.data[0].sender == myName){
+               for (var i = 0; i < contact.length; i++) {
+                 if(contact[i].name == data.newBlock.data[0].recipient || contact[i].name == data.newBlock.data[0].sender){
+                   DBcontact.addMessage(contact[i].name,data.newBlock.data[0], function () {
+                     console.log('aaaaa');
                    })
                  }
-               })
-
-               console.log("это сообщение ва ",data.newBlock.data[0]);
+               }
              }
+           })
+           if(doc != 0 ){
+             console.log({status: 'ADD'});
            }
            sendMessageForAllConnectPeers(data,wsServer,poolServers)
            ApiBlockchain.deleteMessageAddInBlock(data.newBlock)
@@ -321,33 +291,20 @@ var   receivedBlockProcessing = (data,wsServer,poolServers,wss) => {
   })
 
 }
-var  startWorker = (path, cb) => {
-      blockchain = Lastblock
-      ApiBlockchain.showMessages(function (cashMes) {
-       w = new Worker(path, {workerData: {blockchain: blockchain,messages: cashMes}});
-        w.on('message', (msg) => {
-            cb(null, msg)
-        })
-        w.on('error', cb);
-        w.on('exit', (code) => {
-            if(code != 0)
-                console.error(new Error(`Worker stopped with exit code ${code}`))
-       });
-       return w;
-     })
 
 
-  }
 var sendDataAboutPeers = (data,wsServer,poolServers) => {
     DBapi.findPeer(data.peer.ip,data.peer.port,function(peer) {
       if(peer == null &&  data.peer.port != myData.myPort){
         DBapi.addDataPeer(data.peer.ip,data.peer.port,data.peer.count,function(newDoc) {
+          //console.log('adding new Peer',newDoc);
           sendMessageForAllConnectPeers(data,wsServer,poolServers)
         })
-
       }
     })
 }
+
+
 function newClient(myData,i) {
   var data = new DataSender()
   data.init = 4
@@ -367,70 +324,14 @@ function handlerNewClient(data,wsServer,poolServers) {
   }
 }
 function disconectPeerFromNetwork(data,wsServer,poolServers,wss) {
-  DBapi.findPeer(data.ip,+data.port,function (peer) {
+  //console.log(8);
+  DBapi.findPeer(data.peer.ip,+data.peer.port,function (peer) {
       if (peer != null) {
         DBapi.delPeer(data.peer.ip,+data.peer.port,function(err, numRemoved) {
+          //console.log('rem',err,numRemoved,+data.peer.port);
           sendMessageForAllConnectPeers(data,wsServer,poolServers)
         })
 
       }
-  })
-}
-
-function checkNewChain(data) {
-  let chain = data.data
-    if(data.data.length){
-      ApiBlockchain.getLastChain(function (lastBlock) {
-        ApiBlockchain.upload(chain,lastBlock,function (status) {
-          if(status){
-            console.log("обновление");
-            addNewMessages(Lastblock.timestamp, exports.GlobListContact)
-            Lastblock = chain[chain.length-1]
-          }
-        })
-      })
-    }
-
-}
-exports.sendMessage = function (id,index ,message) {
-      var sendData = new DataSender()
-      sendData.block = {
-        index: index,
-        id: id,
-        message: message
-      }
-      sendData.init = 5
-      sendMessageForAllConnectPeers(sendData,wsServer,poolServers)
-}
-function sendNewChain(wss,data) {
-  let index = data.data
-   ApiBlockchain.getNewChain(index,function (chain) {
-     dataNewChain = {
-       init: 9,
-       data: chain
-     }
-     dataNewChain = JSON.stringify(dataNewChain)
-     wss.send(dataNewChain)
-   })
-}
-exports.creatIdRoom = function (cb) {
-  let num = Math.random()
-   num = Math.floor(num * 1000000)
-  let idConatact = "a" + String(new Date().getTime()) + String(num)
-  return idConatact
-}
-function addNewMessages(index, contactList) {
-  console.log('refresh');
-  ApiBlockchain.getChain(index,function (newBlockChain) {
-    console.log("newBlockChain",newBlockChain);
-    for (let i = 0; i < newBlockChain.length; i++) {
-      for (let j = 0; j < contactList.length; j++) {
-        if (newBlockChain[i].data[0].id == contactList[j].id) {
-            DBcontacts.addMessages(newBlockChain[i].data[0].id, 2, newBlockChain[i].data[0].message, newBlockChain[i].data[0].index,function () {
-              console.log("вы пропустили сообщение");
-            })
-        }
-      }
-    }
   })
 }

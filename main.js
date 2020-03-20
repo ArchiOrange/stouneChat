@@ -9,17 +9,21 @@ require('./thread.js')
 function createWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({
+    icon: 'icon2.png',
     width: 800,
     height: 600,
+    show:false,
     titleBarStyle: 'hidden',
     webPreferences: {
       nodeIntegration: true,
       nodeIntegrationInWorker: true
     }
   })
+mainWindow.once('ready-to-show', () => {
+    mainWindow.show()
+  })
 
-
-  //Menu.setApplicationMenu(null);
+  Menu.setApplicationMenu(null);
 mainWindow.setMinimumSize(800,600);
   // and load the index.html of the app.
   mainWindow.loadFile('index.html')

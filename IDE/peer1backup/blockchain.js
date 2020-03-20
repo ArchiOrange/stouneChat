@@ -65,12 +65,13 @@ exports.showMessages = function (cb) {
 exports.isValidNewBlock = function (newBlock,previousBlock,cb) {
       //console.log({err:'неверный индекс',previousBlock:previousBlock,newBlock:newBlock});
       if (previousBlock.index + 1 !== newBlock.index) {
+          console.log('не верный индекс',previousBlock,newBlock);
           return cb(false);
       } else if (previousBlock.hash !== newBlock.previousHash) {
-          console.log('неверный хеш предыдущего блока');
+          console.log('неверный хеш предыдущего блока',previousBlock,newBlock);
           return cb(false);
       } else if (checkHash(newBlock.index,newBlock.previousHash,newBlock.timestamp,newBlock.data,newBlock.nonce) !== newBlock.hash) {
-          console.log('неверный хеш: ');
+          console.log('неверный хеш: ',previousBlock,newBlock);
           return cb(false);
       }
       return cb(true);
@@ -108,17 +109,17 @@ exports.upload =  function (chain,lastBlock,cb) {
           if(success){
             addBlockInDB(chain,function (docs) {
               console.log(docs);
-              cb(true)
+              //return ("добавлено "+ docs + "блоков");
 
             })
           }
           else{
-              cb(false)
+            console.log("не верная цепочка");
           //  return("не верная цепочка");
           }
       } else {
         console.log('Принятый блокчейн не является валидным');
-          cb(false)
+          //return('Принятый блокчейн не является валидным');
       }
 
 }
@@ -150,11 +151,6 @@ exports.getLastChain = function (cb) {
 }
 exports.getNewChain = function (timestamp,cb) {
   db.find({timestamp: {$gt: timestamp}}).sort({timestamp: 1}).exec(function (err,chain) {
-    cb(chain)
-  })
-}
-exports.getChain = function (timestamp,cb) {
-  db.find({timestamp:{$gt: timestamp}}).sort({timestamp: 1}).exec(function (err,chain) {
     cb(chain)
   })
 }

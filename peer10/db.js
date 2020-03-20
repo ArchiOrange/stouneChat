@@ -1,7 +1,6 @@
 var Datastore = require('nedb');
-var db = new Datastore({filename : __dirname + '/db/mydata.json', autoload: true});
-var dbContact = new Datastore({filename : __dirname + '/db/contact.json', autoload: true});
-  var dbmydata = new Datastore({filename : __dirname + '/db/datanode.json', autoload: true});
+var db = new Datastore({filename : __dirname + '\\db\\mydata.json', autoload: true});
+var dbContact = new Datastore({filename : __dirname + '\\db\\contact.json', autoload: true});
 exports.addDataPeer = function (ip,port) {
   db.insert({ip: ip,port: +port,count: 0}), function (err, newDoc) {   // Callback is optional
     cb(newDoc)
@@ -48,12 +47,8 @@ exports.addMessage = function (name,message,cb) {
 });
 }
 exports.getName = function(cb) {
+  var dbmydata = new Datastore({filename : __dirname + '\\db\\datanode.json', autoload: true});
   dbmydata.findOne({id:0}, function (err, doc) {
   cb(doc)
 });
-}
-exports.addName = function (doc,cb) {
-  dbmydata.insert(doc),function (err, newDoc) {   // Callback is optional
-    cb(newDoc,err)
-  }
 }

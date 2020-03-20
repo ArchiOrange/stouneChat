@@ -65,6 +65,7 @@ exports.showMessages = function (cb) {
 exports.isValidNewBlock = function (newBlock,previousBlock,cb) {
       //console.log({err:'неверный индекс',previousBlock:previousBlock,newBlock:newBlock});
       if (previousBlock.index + 1 !== newBlock.index) {
+          console.log('не верный индекс',previousBlock,newBlock);
           return cb(false);
       } else if (previousBlock.hash !== newBlock.previousHash) {
           console.log('неверный хеш предыдущего блока');
@@ -150,11 +151,6 @@ exports.getLastChain = function (cb) {
 }
 exports.getNewChain = function (timestamp,cb) {
   db.find({timestamp: {$gt: timestamp}}).sort({timestamp: 1}).exec(function (err,chain) {
-    cb(chain)
-  })
-}
-exports.getChain = function (timestamp,cb) {
-  db.find({timestamp:{$gt: timestamp}}).sort({timestamp: 1}).exec(function (err,chain) {
     cb(chain)
   })
 }

@@ -18,9 +18,7 @@ class Block {
         this.hash = hash.toString();
     }
 }
-var Lastblock = 0
-const DBcontacts = require('./contacts.js')
-exports.GlobListContact = []
+var lastblock = 0
 const DBapi = require('./db.js')
 const ApiBlockchain = require('./blockchain');
 const crypto = require('crypto');
@@ -28,7 +26,6 @@ var myData = {myIP:null,myPort:null,countClient:null}
 var myport = __dirname.replace(/\D/g,'')
 myport = +myport+ 9000
 let w = null
-const ipcRenderer = require('electron').ipcRenderer;
 var statusServer = false
 //var peers = null
 var poolServers = []
@@ -133,7 +130,7 @@ var sendMessageForAllConnectPeers = (dataSender,wsServer,poolServers) => {
             serverup(data.ipClient)
             ApiBlockchain.showBlockchain(function (blockchain) {
               if(blockchain == 0){
-                Lastblock = data.blockchain[0]
+                lastblock = data.blockchain[0]
                 ApiBlockchain.addFirstBlockchain(data.blockchain)
               }
               else{
@@ -142,7 +139,6 @@ var sendMessageForAllConnectPeers = (dataSender,wsServer,poolServers) => {
                   init: 7,
                   data: lastBlock.timestamp
                 }
-                Lastblock = lastBlock
                   requestNewChain = JSON.stringify(requestNewChain)
                   poolServers[0].servers.send(requestNewChain)
                 })
@@ -209,7 +205,6 @@ function opentConectionForPoolServers(ip,portserver) {
 app.get('/blockchain',function (req,res) {
   ApiBlockchain.showBlockchain(function (blockchain) {
   res.json({peers,blockchain})
-  // res.json(exports.GlobListContact)
   })
 })
 app.get('/messages',function (req,res) {
@@ -260,6 +255,7 @@ var sendDataNewClient = (data,wss,wsServer,poolServers) => {
   sendMessageForAllConnectPeers(dataNewPeer,wsServer,poolServers)
 }
 var receptionAndBroadkastMessages = (wsServer,poolServers,wss,data) => {
+            console.log("messageOK");
   var k = 1 ;
   ApiBlockchain.showMessages(function (cashMes) {
     for (var i = 0; i < cashMes.length; i++) {
@@ -271,47 +267,26 @@ var receptionAndBroadkastMessages = (wsServer,poolServers,wss,data) => {
     if(k==1){
       cashMes[cashMes.length] = data.block
       sendMessageForAllConnectPeers(data,wsServer,poolServers)
-      ApiBlockchain.showMessages(function (cashMes) {
-          let priveteLastBlock = Lastblock
-          var dataThread = {
-            path: __dirname+ '/worker.js',
-            messages: cashMes,
-            lastblock:priveteLastBlock
-          }
-          ipcRenderer.invoke('genirateBLock', dataThread).then((result) => {
-            dataSender = new DataSender ()
-            dataSender.init = 6
-            dataSender.newBlock = result.blockForBlockhain
-            dataSender.newBlock.sign = myport
-            sendMessageForAllConnectPeers(dataSender,wsServer,poolServers)
-          })
-    })
+      let myWorker = startWorker(__dirname + '/worker.js', (err, result) => {
+          if(err) return console.error(err);
+          dataSender = new DataSender ()
+          dataSender.init = 6
+          dataSender.newBlock = result.blockForBlockhain
+          dataSender.newBlock.sign = myport
+          sendMessageForAllConnectPeers(dataSender,wsServer,poolServers)
+      })
     }
   })
 }
 var   receivedBlockProcessing = (data,wsServer,poolServers,wss) => {
-  ApiBlockchain.isValidNewBlock(data.newBlock,Lastblock,function(bool) {
+  //console.log(282,lastBlock);
+  ApiBlockchain.isValidNewBlock(data.newBlock,lastblock,function(bool) {
     if(bool){
-      if(Lastblock.previousHash != data.newBlock.previousHash && Lastblock.index != data.newBlock.index){
-        Lastblock = data.newBlock
+      if(lastblock.previousHash != data.newBlock.previousHash && lastblock.index != data.newBlock.index){
+        lastblock = data.newBlock
          ApiBlockchain.addNewBlockToBlockchain(data.newBlock,function(doc) {
            if(doc != 0 ){
-             console.log({status: 'ADDblock'},data.newBlock);
-           }
-           for (var i = 0; i < exports.GlobListContact.length; i++) {
-             if (data.newBlock.data[0].id == exports.GlobListContact[i].id) {
-               DBcontacts.findMessage(data.newBlock.data[0].id,1,data.newBlock.data[0].message,data.newBlock.data[0].index,function (message) {
-                 if(message){
-                   console.log('message success')
-                 }else{
-                   DBcontacts.addMessages(data.newBlock.data[0].id,2,data.newBlock.data[0].message,data.newBlock.data[0].index,function () {
-                     console.log("новое сообщение");
-                   })
-                 }
-               })
-
-               console.log("это сообщение ва ",data.newBlock.data[0]);
-             }
+             console.log({status: 'ADDblock'});
            }
            sendMessageForAllConnectPeers(data,wsServer,poolServers)
            ApiBlockchain.deleteMessageAddInBlock(data.newBlock)
@@ -322,7 +297,7 @@ var   receivedBlockProcessing = (data,wsServer,poolServers,wss) => {
 
 }
 var  startWorker = (path, cb) => {
-      blockchain = Lastblock
+      blockchain = lastblock
       ApiBlockchain.showMessages(function (cashMes) {
        w = new Worker(path, {workerData: {blockchain: blockchain,messages: cashMes}});
         w.on('message', (msg) => {
@@ -379,29 +354,16 @@ function disconectPeerFromNetwork(data,wsServer,poolServers,wss) {
 
 function checkNewChain(data) {
   let chain = data.data
-    if(data.data.length){
+    if(!data.data.length){
       ApiBlockchain.getLastChain(function (lastBlock) {
         ApiBlockchain.upload(chain,lastBlock,function (status) {
-          if(status){
-            console.log("обновление");
-            addNewMessages(Lastblock.timestamp, exports.GlobListContact)
-            Lastblock = chain[chain.length-1]
-          }
+          console.log(status);
         })
       })
     }
 
 }
-exports.sendMessage = function (id,index ,message) {
-      var sendData = new DataSender()
-      sendData.block = {
-        index: index,
-        id: id,
-        message: message
-      }
-      sendData.init = 5
-      sendMessageForAllConnectPeers(sendData,wsServer,poolServers)
-}
+
 function sendNewChain(wss,data) {
   let index = data.data
    ApiBlockchain.getNewChain(index,function (chain) {
@@ -412,25 +374,4 @@ function sendNewChain(wss,data) {
      dataNewChain = JSON.stringify(dataNewChain)
      wss.send(dataNewChain)
    })
-}
-exports.creatIdRoom = function (cb) {
-  let num = Math.random()
-   num = Math.floor(num * 1000000)
-  let idConatact = "a" + String(new Date().getTime()) + String(num)
-  return idConatact
-}
-function addNewMessages(index, contactList) {
-  console.log('refresh');
-  ApiBlockchain.getChain(index,function (newBlockChain) {
-    console.log("newBlockChain",newBlockChain);
-    for (let i = 0; i < newBlockChain.length; i++) {
-      for (let j = 0; j < contactList.length; j++) {
-        if (newBlockChain[i].data[0].id == contactList[j].id) {
-            DBcontacts.addMessages(newBlockChain[i].data[0].id, 2, newBlockChain[i].data[0].message, newBlockChain[i].data[0].index,function () {
-              console.log("вы пропустили сообщение");
-            })
-        }
-      }
-    }
-  })
 }
